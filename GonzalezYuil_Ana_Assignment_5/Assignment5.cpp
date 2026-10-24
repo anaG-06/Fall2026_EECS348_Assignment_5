@@ -47,20 +47,20 @@ public:
             error = "cannot open file";
             return false;
         }
-        std::string tok; //vauge variable name (used to hold file lines)
-        int n = 0; //used to count iterations
-        while (in >> tok) { //while tok stores a line from the file (in)
-            if (n >= kCells) {
+        std::string tok; //vauge variable name (used to hold cells from file line)
+        int n = 0; //used to count number of cells/current cell
+        while (in >> tok) { //while tok stores a line from the file stream (in)
+            if (n >= kCells) { //if number of cells (n) exceeds kCells (81), return false 
                 error = "more than " + std::to_string(kCells) + " cells";
                 return false;
             }
-            int d = parseCell(tok);
-            if (d < 0) {
+            int d = parseCell(tok); // d is set to either -1 (invalid), 0 (empty), or 1-9 (valid number)
+            if (d < 0) { //check if cell has an invalid char, return false
                 error = "invalid token '" + tok + "' at cell " + std::to_string(n + 1);
                 return false;
             }
             if (d > 0) addClue(n / kSize, n % kSize, d);
-            ++n;
+            ++n; //move to next cell
         }
         if (n < kCells) {
             error = "only " + std::to_string(n) + " of " + std::to_string(kCells) + " cells found";
@@ -81,7 +81,7 @@ public:
         return kAllDigits & ~(rowUsed_[r] | colUsed_[c] | boxUsed_[boxOf(r, c)]);
     }
 
-    void place(int r, int c, int d) {
+    void place(int r, int c, int d) { //places candidate value in cell using bitwise operations
         cells_[r * kSize + c] = d;
         const unsigned bit = 1u << d;
         rowUsed_[r] |= bit;
@@ -89,7 +89,7 @@ public:
         boxUsed_[boxOf(r, c)] |= bit;
     }
 
-    void remove(int r, int c, int d) {
+    void remove(int r, int c, int d) { //removes candidate value from cell using bitwise operations
         cells_[r * kSize + c] = 0;
         const unsigned bit = ~(1u << d);
         rowUsed_[r] &= bit;
@@ -113,7 +113,7 @@ public:
         }
     }
 
-    bool operator<(const Board& o) const { return cells_ < o.cells_; }  // for sorting
+    bool operator<(const Board& o) const { return cells_ < o.cells_; }  // for sorting, overrides < operator
 
     static int countBits(unsigned m) {
         int n = 0;
@@ -126,11 +126,11 @@ private:
 
     // 0 = blank, 1-9 = digit, -1 = invalid token
     static int parseCell(const std::string& tok) {
-        if (tok.size() != 1) return -1;
-        const char ch = tok[0];
-        if (ch == '_' || ch == '.' || ch == '0') return 0;
-        if (ch >= '1' && ch <= '9') return ch - '0';
-        return -1;
+        if (tok.size() != 1) return -1; //if the cell is not a single char/ empty char, return invalid 
+        const char ch = tok[0]; //convert tok from str to char
+        if (ch == '_' || ch == '.' || ch == '0') return 0; //return 0 is char is character that indicates empty
+        if (ch >= '1' && ch <= '9') return ch - '0';// if char is in range, return that char digit
+        return -1; //otherwise return invalid
     }
 
     void addClue(int r, int c, int d) {
@@ -160,7 +160,7 @@ public:
     void run() {
         solutions_.clear();
         stop_ = truncated_ = false;
-        if (!work_.isConsistent()) return;        // conflicting clues: no solution
+        if (!work_.isConsistent()) return;        // conflicting clues: no solution (isConsistent = false)
         search(work_.blankCount());
         std::sort(solutions_.begin(), solutions_.end());  // deterministic order
     }
@@ -169,13 +169,13 @@ public:
     bool truncated() const { return truncated_; }  // more solutions existed than the limit
 
 private:
-    void search(int blanksLeft) {
+    void search(int blanksLeft) { //search for next blank cell
         if (blanksLeft == 0) {
             if (limit_ != 0 && solutions_.size() >= limit_) {
                 truncated_ = stop_ = true;
                 return;
             }
-            solutions_.push_back(work_);
+            solutions_.push_back(work_); //add to number of solutions
             return;
         }
 
@@ -225,7 +225,7 @@ public:
 
         Board puzzle;
         std::string error;
-        if (!puzzle.load(filename_, error)) {
+        if (!puzzle.load(filename_, error)) { //if file cannot be loaded return error and state why
             os << "Error: " << error << "\n\n";
             return false;
         }
@@ -258,18 +258,18 @@ private:
 int main(int argc, char** argv) {
     std::size_t limit = 0;
     std::vector<std::string> files;
-    for (int i = 1; i < argc; ++i) {
+    for (int i = 1; i < argc; ++i) { //attempt to take input from command line
         const std::string arg = argv[i];
-        if (arg == "--limit" && i + 1 < argc) limit = std::strtoul(argv[++i], nullptr, 10);
+        if (arg == "--limit" && i + 1 < argc) limit = std::strtoul(argv[++i], nullptr, 10); //strtoul converts string to unsigned long int
         else files.push_back(arg);
     }
-    if (files.empty())
+    if (files.empty()) //otherwise, push file names (1-5) to vector manually
         for (int i = 1; i <= 5; ++i) files.push_back("puzzle" + std::to_string(i) + ".txt");
 
-    bool allOk = true;
-    for (const std::string& f : files) {
-        PuzzleReport report(f, limit);
+    bool allOk = true; //indicates all file names ok
+    for (const std::string& f : files) { //for each file in files
+        PuzzleReport report(f, limit); //solves puzzle in file
         allOk = report.execute(std::cout) && allOk;
     }
-    return allOk ? 0 : 1;
+    return allOk ? 0 : 1; //return 0 or 1 based on allOK status
 }
