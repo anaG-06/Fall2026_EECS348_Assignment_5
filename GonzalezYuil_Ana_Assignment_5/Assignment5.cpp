@@ -11,7 +11,7 @@
 Revised by: Ana Gonzalez Yuil
 Revision Date: 10.28.26
 Sources used: Gemini
-Revisions: additional comments, solution output to files (Gemini)
+Revisions: additional comments, puzzle solution output to files (Gemini)
 */
 
 #include <algorithm>
@@ -262,7 +262,7 @@ public:
         for (std::size_t i = 0; i < sols.size(); ++i) {
             outFile << "Solution " << (i + 1) << ":\n";
             sols[i].print(outFile);
-            if (i + 1 < sols.size()) {
+            if (i + 1 < sols.size()) { //adds newline between solutions
                 outFile << "\n";
             }
         }
