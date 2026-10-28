@@ -9,9 +9,9 @@
 //Revision Date: October 15, 2026
 /* --------------------------------------
 Revised by: Ana Gonzalez Yuil
-Revision Date: 10.24.26
-Sources used: 
-Revisions: additional comments, 
+Revision Date: 10.28.26
+Sources used: Gemini
+Revisions: additional comments, solution output to files (Gemini)
 */
 
 #include <algorithm>
@@ -217,36 +217,56 @@ class PuzzleReport {
 public:
     PuzzleReport(const std::string& filename, std::size_t limit)
         : filename_(filename), limit_(limit) {}
-
+    
+    // MODIFICATION: Executes puzzle solving and writes results to solutionN.txt
     // Returns false if the file could not be used.
-    bool execute(std::ostream& os) const {
-        os << "==================================================\n";
-        os << "Puzzle file: " << filename_ << "\n";
+    bool execute() const { //removed output stream os argument, not needed as solution is printed to file
+
+        // --- ADDITION: Extract puzzle number N from the filename (e.g., "puzzle1.txt" -> "1") ---
+        std::string nStr = "";
+        for (char ch : filename_) {
+            if (std::isdigit(static_cast<unsigned char>(ch))) {
+                nStr += ch;
+            }
+        }
+        if (nStr.empty()) {
+            nStr = "1"; // Fallback default if filename contains no digits
+        }
+
+        // --- ADDITION: Construct output filename solutionN.txt and open file stream ---
+        std::string outFilename = "solution" + nStr + ".txt";
+        std::ofstream outFile(outFilename);
+        if (!outFile) {
+            std::cerr << "Error: Cannot open output file " << outFilename << "\n";
+            return false;
+        }
 
         Board puzzle;
         std::string error;
         if (!puzzle.load(filename_, error)) { //if file cannot be loaded return error and state why
-            os << "Error: " << error << "\n\n";
+            outFile << "Error: " << error << "\n\n"; //output error to solution file
             return false;
         }
-        os << "Puzzle:\n";
-        puzzle.print(os);
 
         SudokuSolver solver(puzzle, limit_);
         solver.run();
         const std::vector<Board>& sols = solver.solutions();
 
+        // --- MODIFICATION: Write "No solution found." if no solutions exist ---
         if (sols.empty()) {
-            os << "\nNo solution found\n\n";
+            outFile << "\nNo solution found\n\n";
             return true;
         }
-        os << "\n" << sols.size() << " solution(s) found"
-           << (solver.truncated() ? " (stopped at limit; more exist)" : "") << "\n";
+
+        // --- MODIFICATION: Write solved puzzle(s) followed by "Solutions found: n" ---
         for (std::size_t i = 0; i < sols.size(); ++i) {
-            os << "\nSolution " << (i + 1) << ":\n";
-            sols[i].print(os);
+            outFile << "Solution " << (i + 1) << ":\n";
+            sols[i].print(outFile);
+            if (i + 1 < sols.size()) {
+                outFile << "\n";
+            }
         }
-        os << "\n";
+        outFile << "\nSolutions found: " << sols.size() << "\n";
         return true;
     }
 
@@ -269,7 +289,8 @@ int main(int argc, char** argv) {
     bool allOk = true; //indicates all file names ok
     for (const std::string& f : files) { //for each file in files
         PuzzleReport report(f, limit); //solves puzzle in file
-        allOk = report.execute(std::cout) && allOk;
+        // MODIFICATION: Call execute() without std::cout, as output is now written to solutionN.txt internally
+        allOk = report.execute() && allOk;
     }
     return allOk ? 0 : 1; //return 0 or 1 based on allOK status
 }
